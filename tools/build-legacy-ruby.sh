@@ -79,6 +79,24 @@ EOF
         sed -i "/^#endif/i #define ${macro} 1" "$config_header"
     done
     sed -i '/^#define HAVE__SETJMP 1$/d; /^#define HAVE__LONGJMP 1$/d' "$config_header"
+    # Ruby's Windows compatibility layer unconditionally defines fseeko;
+    # with _FILE_OFFSET_BITS=64 that becomes fseeko64 and collides with the
+    # implementation supplied by current MinGW CRTs. Use the CRT version when
+    # configure has confirmed it exists.
+    python - <<'PY'
+from pathlib import Path
+
+path = Path('win32/win32.c')
+source = path.read_text()
+function = 'int\nfseeko(FILE *stream, off_t offset, int whence)\n'
+next_function = '\noff_t\nrb_w32_ftello(FILE *stream)'
+if source.count(function) != 1 or source.count(next_function) != 1:
+    raise SystemExit('Could not locate Ruby 1.9.3 fseeko compatibility function')
+start = source.index(function)
+end = source.index(next_function, start)
+source = source[:start] + '#ifndef HAVE_FSEEKO\n' + source[start:end] + '#endif\n' + source[end:]
+path.write_text(source)
+PY
     sed -i 's/\${LIBOBJDIR}strerror\.o//g; s/\${LIBOBJDIR}strchr\.o//g' Makefile
     sed -i '/\$defs << "-DHAVE_SOCKETPAIR"/d' ext/socket/extconf.rb
     library=libmsvcrt-ruby191-static.a

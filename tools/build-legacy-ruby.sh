@@ -117,12 +117,18 @@ test -s "$library"
 mkdir -p "$artifact_dir/lib" "$artifact_dir/include/ruby" "$artifact_dir/metadata"
 cp "$library" "$artifact_dir/lib/"
 if [[ "$version" == 1.9.3 ]]; then
+  # Ruby 1.9 installs ruby.h at the include root and the headers referenced as
+  # ruby/*.h in a nested directory. Preserve that layout so system headers
+  # such as io.h cannot be shadowed by Ruby's own io.h.
+  cp include/ruby.h "$artifact_dir/include/"
   cp -R include/ruby/. "$artifact_dir/include/ruby/"
   cp "$config_header" "$artifact_dir/include/ruby/config.h"
 else
   # Ruby 1.8.7 keeps its C API headers in the source root rather than
-  # include/ruby, unlike the newer Ruby branches.
-  cp ./*.h "$artifact_dir/include/ruby/"
+  # include/ruby, unlike the newer Ruby branches. Its Windows headers are
+  # included via win32/*.h, so preserve that subdirectory too.
+  cp ./*.h "$artifact_dir/include/"
+  cp -R win32 "$artifact_dir/include/"
 fi
 cp ./*.pc "$artifact_dir/metadata/" 2>/dev/null || true
 cp config.log Makefile "$artifact_dir/metadata/"

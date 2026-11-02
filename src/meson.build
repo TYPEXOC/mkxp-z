@@ -1152,10 +1152,10 @@ if mri_runtime_root != ''
         error('mri_runtime_root supports only mri_version=1.8.7 or 1.9.3')
     endif
 
-    ruby_runtime_include_dir = join_paths(mri_runtime_root, 'include', 'ruby')
+    ruby_runtime_include_dir = join_paths(mri_runtime_root, 'include')
     ruby_fs = import('fs')
     if not ruby_fs.is_file(join_paths(ruby_runtime_include_dir, 'ruby.h'))
-        error('mri_runtime_root does not contain include/ruby/ruby.h')
+        error('mri_runtime_root does not contain include/ruby.h')
     endif
     if not ruby_fs.is_file(ruby_runtime_library)
         error('The static Ruby library was not found: ' + ruby_runtime_library)
@@ -1165,7 +1165,7 @@ if mri_runtime_root != ''
     endif
 
     ruby = declare_dependency(
-        compile_args: ['-I' + ruby_runtime_include_dir],
+        compile_args: ['-idirafter', ruby_runtime_include_dir],
         link_args: [ruby_runtime_library] + ruby_runtime_system_libs,
         dependencies: [zlib],
     )

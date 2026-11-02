@@ -36,9 +36,8 @@ case "$version" in
       grep -q "^#define ${macro} 1$" config.h || \
         sed -i "/^#endif/i #define ${macro} 1" config.h
     done
-    # Ruby 1.8's Windows GNUmakefile hard-codes shared mode, ignoring
-    # --disable-shared and making the static-library target circular.
-    sed -i 's/^ENABLE_SHARED=yes$/ENABLE_SHARED=no/' GNUmakefile
+    # Ruby 1.8's Windows GNUmakefile hard-codes shared mode, so override it
+    # on the make command line to select the static-library target.
     library=libruby18.a
     ;;
   1.9.3)
@@ -89,7 +88,11 @@ EOF
     ;;
 esac
 
-make -j8 "CFLAGS=$build_flags" "BASERUBY=$build_root/baseruby.sh" "$library"
+if [[ "$version" == 1.8.7 ]]; then
+  make -j8 ENABLE_SHARED=no "CFLAGS=$build_flags" "$library"
+else
+  make -j8 "CFLAGS=$build_flags" "BASERUBY=$build_root/baseruby.sh" "$library"
+fi
 test -s "$library"
 
 mkdir -p "$artifact_dir/lib" "$artifact_dir/include/ruby" "$artifact_dir/metadata"

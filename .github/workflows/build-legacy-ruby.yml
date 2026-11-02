@@ -146,9 +146,11 @@ jobs:
             extra_libs='-lshell32 -lpthread -lz'
             if [ '${{ matrix.version }}' = '1.8.7' ]; then
               runtime_archive="$runtime_lib/libruby18.a"
+              runtime_stdlib_dir="$runtime_root/stdlib/lib/ruby/1.8"
               extra_libs="$extra_libs -lwsock32"
             else
               runtime_archive="$runtime_lib/libmsvcrt-ruby191-static.a"
+              runtime_stdlib_dir="$runtime_root/stdlib/lib/ruby/1.9.1"
               extra_libs="$extra_libs -lws2_32 -limagehlp -lshlwapi"
             fi
             cc -idirafter "$runtime_include" tests/legacy-ruby-smoke.c "$runtime_archive" \
@@ -157,7 +159,7 @@ jobs:
             result=$?
           fi
           if [ "$result" -eq 0 ]; then
-            (cd build/artifact && ./legacy-ruby-smoke.exe '${{ matrix.version }}') \
+            (cd build/artifact && ./legacy-ruby-smoke.exe '${{ matrix.version }}' "$runtime_stdlib_dir") \
               >> artifacts/mkxp-z-ruby-${{ matrix.version }}-build.log 2>&1
             result=$?
           fi

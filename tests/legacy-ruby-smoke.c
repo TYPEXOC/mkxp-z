@@ -8,8 +8,9 @@ int main(int argc, char **argv)
 {
     char expected_version[32];
     char script[128];
+    VALUE load_path;
 
-    if (argc != 2 || strlen(argv[1]) >= sizeof(expected_version))
+    if (argc != 3 || strlen(argv[1]) >= sizeof(expected_version))
         return 2;
 
     strcpy(expected_version, argv[1]);
@@ -20,6 +21,8 @@ int main(int argc, char **argv)
 #endif
 
     ruby_init();
+    load_path = rb_gv_get("$:");
+    rb_ary_unshift(load_path, rb_str_new2(argv[2]));
     snprintf(script, sizeof(script),
              "require 'date'; abort unless RUBY_VERSION == '%s'",
              expected_version);

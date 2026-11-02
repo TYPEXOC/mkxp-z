@@ -1,0 +1,78 @@
+name: Build legacy Ruby runtimes
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - ruby-legacy-runtimes
+    paths:
+      - .github/workflows/build-legacy-ruby.yml
+      - tools/build-legacy-ruby.sh
+      - tools/ruby193-baseruby-compat.rb
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Ruby ${{ matrix.version }} (Windows i686)
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - version: 1.8.7
+            source: https://github.com/mkxp-z/ruby.git
+            ref: ruby_1_8_7
+          - version: 1.9.3
+            source: https://github.com/ruby/ruby.git
+            ref: ruby_1_9_3
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install MSYS2 build tools
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: mingw32
+          update: true
+          install: >-
+            autoconf
+            bison
+            curl
+            diffutils
+            git
+            make
+            mingw-w64-i686-gcc
+            mingw-w64-i686-zlib
+            mingw-w64-x86_64-ruby
+
+      - name: Build Ruby runtime
+        id: compile
+        shell: msys2 {0}
+        run: |
+          set +e
+          mkdir -p artifacts
+          bash tools/build-legacy-ruby.sh \
+            '${{ matrix.version }}' \
+            '${{ matrix.source }}' \
+            '${{ matrix.ref }}' \
+            "$(pwd)/artifacts/ruby-${{ matrix.version }}" \
+            > "$(pwd)/artifacts/ruby-${{ matrix.version }}-build.log" 2>&1
+          result=$?
+          echo "exit_code=$result" >> "$GITHUB_OUTPUT"
+          tail -n 100 "$(pwd)/artifacts/ruby-${{ matrix.version }}-build.log"
+          exit 0
+
+      - name: Upload runtime and build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ruby-${{ matrix.version }}-windows-i686
+          path: artifacts/
+          if-no-files-found: warn
+
+      - name: Check build result
+        if: always()
+        shell: msys2 {0}
+        run: exit '${{ steps.compile.outputs.exit_code }}'

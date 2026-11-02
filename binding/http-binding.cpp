@@ -138,7 +138,7 @@ RB_METHOD_GUARD(httpPost) {
 #if RAPI_MAJOR >= 2
     return (VALUE)drop_gvl_guard(httpPostInternal, &args, 0, 0);
 #else
-    return httpPostInternal(&args);
+    return (VALUE)httpPostInternal(&args);
 #endif
 }
 RB_METHOD_GUARD_END
@@ -182,7 +182,7 @@ RB_METHOD_GUARD(httpPostBody) {
 #if RAPI_MAJOR >= 2
     return (VALUE)drop_gvl_guard(httpPostBodyInternal, &args, 0, 0);
 #else
-    return httpPostBodyInternal(&args);
+    return (VALUE)httpPostBodyInternal(&args);
 #endif
 }
 RB_METHOD_GUARD_END

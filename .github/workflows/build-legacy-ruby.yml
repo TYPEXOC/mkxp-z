@@ -42,7 +42,7 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: mingw32
-          update: true
+          update: false
           install: >-
             autoconf
             bison
@@ -82,7 +82,10 @@ jobs:
       - name: Check build result
         if: always()
         shell: msys2 {0}
-        run: exit '${{ steps.compile.outputs.exit_code }}'
+        run: |
+          result='${{ steps.compile.outputs.exit_code }}'
+          if [[ ! "$result" =~ ^[0-9]+$ ]]; then result=1; fi
+          exit "$result"
 
   build-mkxp-z:
     name: mkxp-z with Ruby ${{ matrix.version }} (Windows i686)
@@ -106,7 +109,7 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: mingw32
-          update: true
+          update: false
           install: >-
             bison
             diffutils
@@ -188,4 +191,7 @@ jobs:
       - name: Check build result
         if: always()
         shell: msys2 {0}
-        run: exit '${{ steps.compile.outputs.exit_code }}'
+        run: |
+          result='${{ steps.compile.outputs.exit_code }}'
+          if [[ ! "$result" =~ ^[0-9]+$ ]]; then result=1; fi
+          exit "$result"

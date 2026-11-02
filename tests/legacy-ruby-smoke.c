@@ -13,6 +13,9 @@ int main(int argc, char **argv)
     char expected_version[32];
     char script[128];
     VALUE load_path;
+#ifndef LEGACY_RUBY_18
+    char *ruby_argv[] = {"mkxp-z", "-e", ""};
+#endif
 
     if (argc != 3 || strlen(argv[1]) >= sizeof(expected_version))
         return 2;
@@ -25,6 +28,10 @@ int main(int argc, char **argv)
 #endif
 
     ruby_init();
+#ifndef LEGACY_RUBY_18
+    /* mkxp-z uses ruby_options() to finish initializing MRI 1.9. */
+    ruby_options(3, ruby_argv);
+#endif
     load_path = rb_gv_get("$:");
     rb_ary_unshift(load_path, rb_str_new2(argv[2]));
     snprintf(script, sizeof(script),

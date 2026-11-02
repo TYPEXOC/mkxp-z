@@ -142,5 +142,11 @@ cp ./*.pc "$artifact_dir/metadata/" 2>/dev/null || true
 cp config.log Makefile "$artifact_dir/metadata/"
 mkdir -p "$artifact_dir/stdlib/lib/ruby/$ruby_stdlib_version"
 cp -R lib/. "$artifact_dir/stdlib/lib/ruby/$ruby_stdlib_version/"
+if [[ "$version" == 1.9.3 ]]; then
+  # ruby_options() runs Ruby 1.9's gem prelude, which requires the
+  # configure-generated rbconfig.rb from the Ruby installation.
+  test -s rbconfig.rb
+  cp rbconfig.rb "$artifact_dir/stdlib/lib/ruby/$ruby_stdlib_version/"
+fi
 ar t "$artifact_dir/lib/$library" | head -n 25
 printf 'Built Ruby %s static runtime: %s\n' "$version" "$artifact_dir/lib/$library"

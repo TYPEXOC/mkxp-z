@@ -103,7 +103,7 @@ EOF
   object_list=$(make -s -f Makefile -f "$object_list_makefile" print-ruby-objects)
   read -r -a ruby_objects <<< "$object_list"
   test "${#ruby_objects[@]}" -gt 0
-  make -f Makefile -j8 "CFLAGS=$build_flags" "${ruby_objects[@]}"
+  make -f GNUmakefile -j8 "CFLAGS=$build_flags" "${ruby_objects[@]}"
   rm -f "$library"
   ar rcs "$library" "${ruby_objects[@]}"
   ranlib "$library"

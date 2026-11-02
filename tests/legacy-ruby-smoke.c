@@ -1,5 +1,9 @@
 #include <ruby.h>
+#ifdef LEGACY_RUBY_18
 #include <version.h>
+#else
+#include <ruby/version.h>
+#endif
 
 #include <stdio.h>
 #include <string.h>

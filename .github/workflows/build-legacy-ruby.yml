@@ -143,17 +143,19 @@ jobs:
           if [ "$result" -eq 0 ]; then
             runtime_lib="$runtime_root/lib"
             runtime_include="$runtime_root/include"
+            ruby_compat_flags=''
             extra_libs='-lshell32 -lpthread -lz'
             if [ '${{ matrix.version }}' = '1.8.7' ]; then
               runtime_archive="$runtime_lib/libruby18.a"
               runtime_stdlib_dir="$runtime_root/stdlib/lib/ruby/1.8"
+              ruby_compat_flags='-DLEGACY_RUBY_18'
               extra_libs="$extra_libs -lwsock32"
             else
               runtime_archive="$runtime_lib/libmsvcrt-ruby191-static.a"
               runtime_stdlib_dir="$runtime_root/stdlib/lib/ruby/1.9.1"
               extra_libs="$extra_libs -lws2_32 -limagehlp -lshlwapi"
             fi
-            cc -idirafter "$runtime_include" tests/legacy-ruby-smoke.c "$runtime_archive" \
+            cc $ruby_compat_flags -idirafter "$runtime_include" tests/legacy-ruby-smoke.c "$runtime_archive" \
               $extra_libs -o build/artifact/legacy-ruby-smoke.exe \
               >> artifacts/mkxp-z-ruby-${{ matrix.version }}-build.log 2>&1
             result=$?

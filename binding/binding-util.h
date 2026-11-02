@@ -613,7 +613,7 @@ if (NIL_P(propObj))                                                        \
 prop = 0;                                                                \
 else                                                                       \
 prop = getPrivateDataCheck<PropKlass>(propObj, PropKlass##Type);         \
-k->set##PropName(prop)                                                     \
+k->set##PropName(prop);                                                    \
 rb_iv_set(self, prop_iv, propObj);                                         \
 return propObj;                                                            \
 }                                                                          \

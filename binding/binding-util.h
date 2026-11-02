@@ -23,6 +23,71 @@
 #define BINDING_UTIL_H
 
 #include <ruby.h>
+#ifdef MKXPZ_LEGACY_RUBY
+/* Ruby 1.8's Windows compatibility header rewrites CRT and Winsock names
+ * globally. That breaks unrelated C++ APIs such as std::bind, stream read,
+ * and sigslot::connect in the host. Ruby itself is already built with these
+ * wrappers, so keep them out of mkxp-z's translation units. */
+#undef accept
+#undef bind
+#undef connect
+#undef FD_SET
+#undef FD_CLR
+#undef FD_ISSET
+#undef select
+#undef getpeername
+#undef getsockname
+#undef getsockopt
+#undef ioctlsocket
+#undef listen
+#undef recv
+#undef recvfrom
+#undef send
+#undef sendto
+#undef setsockopt
+#undef shutdown
+#undef socket
+#undef gethostbyaddr
+#undef gethostbyname
+#undef gethostname
+#undef getprotobyname
+#undef getprotobynumber
+#undef getservbyname
+#undef getservbyport
+#undef get_osfhandle
+#undef read
+#undef write
+#undef close
+#undef fclose
+#undef getpid
+#undef sleep
+#undef utime
+#undef strcasecmp
+#undef strncasecmp
+#undef getc
+#undef putc
+#undef fgetc
+#undef fputc
+#undef getchar
+#undef putchar
+#undef fgetchar
+#undef fputchar
+#undef fsync
+#undef stat
+#undef execv
+#undef isatty
+#undef mkdir
+#undef rmdir
+#undef unlink
+#undef isascii
+#undef vsnprintf
+#undef snprintf
+#undef getcwd
+#undef getenv
+#undef rename
+#undef times
+#undef strerror
+#endif
 #ifndef MKXPZ_LEGACY_RUBY
 #include <ruby/version.h>
 #else
@@ -41,6 +106,15 @@
 #define RAPI_TEENY RUBY_VERSION_TEENY
 #endif
 #define RAPI_FULL ((RAPI_MAJOR * 100) + (RAPI_MINOR * 10) + RAPI_TEENY)
+
+#ifndef RB_INT2FIX
+#define RB_INT2FIX(value) INT2FIX(value)
+#endif
+
+#if RAPI_FULL <= 187
+#define rb_str_new_cstr rb_str_new2
+#define rb_get_argv() rb_argv
+#endif
 
 enum RbException {
     RGSS = 0,

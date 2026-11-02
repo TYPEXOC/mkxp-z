@@ -1132,8 +1132,46 @@ global_dependencies += fluidsynth
 
 global_args += '-DMKXPZ_FLUIDSYNTH_SONAME="' + run_command(sonametool, 'fluidsynth', check: true).stdout().strip() + '"'
 
-ruby = dependency('ruby-' + get_option('mri_version'), allow_fallback: false, required: get_option('ruby_system').disable_auto_if(default_system_disabled).enable_auto_if(default_system_enabled))
-if not ruby.found()
+mri_runtime_root = get_option('mri_runtime_root')
+ruby_build_dir = ''
+ruby_stdlib_version = ''
+if mri_runtime_root != ''
+    if host_system != 'windows' or host_machine.cpu_family() != 'x86'
+        error('The prebuilt legacy Ruby runtimes are Windows i686 only')
+    endif
+
+    if get_option('mri_version') == '1.8.7'
+        ruby_runtime_library = join_paths(mri_runtime_root, 'lib', 'libruby18.a')
+        ruby_stdlib_version = '1.8'
+        ruby_runtime_system_libs = ['-lshell32', '-lwsock32']
+    elif get_option('mri_version') == '1.9.3'
+        ruby_runtime_library = join_paths(mri_runtime_root, 'lib', 'libmsvcrt-ruby191-static.a')
+        ruby_stdlib_version = '1.9.1'
+        ruby_runtime_system_libs = ['-lshell32', '-lws2_32', '-limagehlp', '-lshlwapi']
+    else
+        error('mri_runtime_root supports only mri_version=1.8.7 or 1.9.3')
+    endif
+
+    ruby_runtime_include_dir = join_paths(mri_runtime_root, 'include', 'ruby')
+    ruby_fs = import('fs')
+    if not ruby_fs.is_file(join_paths(ruby_runtime_include_dir, 'ruby.h'))
+        error('mri_runtime_root does not contain include/ruby/ruby.h')
+    endif
+    if not ruby_fs.is_file(ruby_runtime_library)
+        error('The static Ruby library was not found: ' + ruby_runtime_library)
+    endif
+    if not ruby_fs.is_dir(join_paths(mri_runtime_root, 'stdlib', 'lib', 'ruby', ruby_stdlib_version))
+        error('The Ruby standard library was not found under mri_runtime_root/stdlib')
+    endif
+
+    ruby = declare_dependency(
+        compile_args: ['-I' + ruby_runtime_include_dir],
+        link_args: [ruby_runtime_library] + ruby_runtime_system_libs,
+        dependencies: [zlib],
+    )
+else
+    ruby = dependency('ruby-' + get_option('mri_version'), allow_fallback: false, required: get_option('ruby_system').disable_auto_if(default_system_disabled).enable_auto_if(default_system_enabled))
+    if not ruby.found()
     libffi = dependency('libffi', allow_fallback: false, method: 'pkg-config', required: get_option('libffi_system').disable_auto_if(default_system_disabled).enable_auto_if(default_system_enabled))
     if not libffi.found()
         libffi_options = meson_base_options
@@ -1193,8 +1231,9 @@ if not ruby.found()
         'cppflags': run_command(quotetool, ruby_internal_cflags + ruby_external_cflags, check: true).stdout().strip(),
         'ldflags': run_command(quotetool, ruby_internal_ldflags + ruby_external_ldflags, check: true).stdout().strip()
     }
-    ruby = subproject('ruby-' + get_option('mri_version'), default_options: ruby_options).get_variable('ruby')
-    ruby_build_dir = subproject('ruby-' + get_option('mri_version'), default_options: ruby_options).get_variable('ruby_build_dir')
+        ruby = subproject('ruby-' + get_option('mri_version'), default_options: ruby_options).get_variable('ruby')
+        ruby_build_dir = subproject('ruby-' + get_option('mri_version'), default_options: ruby_options).get_variable('ruby_build_dir')
+    endif
 endif
 global_dependencies += ruby
 

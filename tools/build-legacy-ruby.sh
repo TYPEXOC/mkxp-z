@@ -39,6 +39,7 @@ case "$version" in
     # Ruby 1.8's Windows GNUmakefile hard-codes shared mode, so override it
     # on the make command line to select the static-library target.
     library=libruby18.a
+    ruby_stdlib_version=1.8
     ;;
   1.9.3)
     build_flags='-O2 -std=gnu99 -Wno-incompatible-pointer-types -Wno-implicit-function-declaration'
@@ -81,6 +82,7 @@ EOF
     sed -i 's/\${LIBOBJDIR}strerror\.o//g; s/\${LIBOBJDIR}strchr\.o//g' Makefile
     sed -i '/\$defs << "-DHAVE_SOCKETPAIR"/d' ext/socket/extconf.rb
     library=libmsvcrt-ruby191-static.a
+    ruby_stdlib_version=1.9.1
     ;;
   *)
     echo "Unsupported Ruby version: $version" >&2
@@ -124,5 +126,7 @@ else
 fi
 cp ./*.pc "$artifact_dir/metadata/" 2>/dev/null || true
 cp config.log Makefile "$artifact_dir/metadata/"
+mkdir -p "$artifact_dir/stdlib/lib/ruby/$ruby_stdlib_version"
+cp -R lib/. "$artifact_dir/stdlib/lib/ruby/$ruby_stdlib_version/"
 ar t "$artifact_dir/lib/$library" | head -n 25
 printf 'Built Ruby %s static runtime: %s\n' "$version" "$artifact_dir/lib/$library"

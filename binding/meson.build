@@ -1,5 +1,5 @@
 ver = get_option('mri_version')
-if ver.version_compare('<=1.8')
+if ver.version_compare('<1.9')
     global_args += '-DMKXPZ_LEGACY_RUBY'
 elif ver.version_compare('>=3.0') and compilers['cpp'].get_id() == 'clang'
     global_args += '-fdeclspec'

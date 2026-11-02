@@ -7,8 +7,13 @@ on:
       - ruby-legacy-runtimes
     paths:
       - .github/workflows/build-legacy-ruby.yml
+      - meson.build
+      - meson_options.txt
+      - src/meson.build
+      - binding/meson.build
       - tools/build-legacy-ruby.sh
       - tools/ruby193-baseruby-compat.rb
+      - tests/legacy-ruby-smoke.c
 
 permissions:
   contents: read
@@ -71,6 +76,107 @@ jobs:
           name: ruby-${{ matrix.version }}-windows-i686
           path: artifacts/
           if-no-files-found: warn
+
+      - name: Check build result
+        if: always()
+        shell: msys2 {0}
+        run: exit '${{ steps.compile.outputs.exit_code }}'
+
+  build-mkxp-z:
+    name: mkxp-z with Ruby ${{ matrix.version }} (Windows i686)
+    needs: build
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ['1.8.7', '1.9.3']
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download static Ruby runtime
+        uses: actions/download-artifact@v8
+        with:
+          name: ruby-${{ matrix.version }}-windows-i686
+          path: runtime-package
+
+      - name: Install MSYS2 build tools
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: mingw32
+          update: true
+          install: >-
+            bison
+            diffutils
+            git
+            make
+            mingw-w64-i686-cmake
+            mingw-w64-i686-gcc
+            mingw-w64-i686-meson
+            mingw-w64-i686-ninja
+            mingw-w64-i686-pkgconf
+            mingw-w64-i686-zlib
+
+      - name: Configure, link, and smoke-test mkxp-z
+        id: compile
+        shell: msys2 {0}
+        run: |
+          set +e
+          mkdir -p artifacts
+          runtime_root="$(cygpath -m "$(pwd)/runtime-package/ruby-${{ matrix.version }}")"
+          meson setup --prefix "$(pwd)/build/artifact" --buildtype release -Dstrip=true \
+            -Dmri_version='${{ matrix.version }}' \
+            -Dmri_runtime_root="$runtime_root" \
+            build > artifacts/mkxp-z-ruby-${{ matrix.version }}-build.log 2>&1
+          result=$?
+          if [ "$result" -eq 0 ]; then
+            ninja -C build >> artifacts/mkxp-z-ruby-${{ matrix.version }}-build.log 2>&1
+            result=$?
+          fi
+          if [ "$result" -eq 0 ]; then
+            meson install -C build --no-rebuild --tags mkxp-z >> artifacts/mkxp-z-ruby-${{ matrix.version }}-build.log 2>&1
+            result=$?
+          fi
+          if [ "$result" -eq 0 ]; then
+            runtime_lib="$runtime_root/lib"
+            runtime_include="$runtime_root/include/ruby"
+            extra_libs='-lshell32 -lpthread -lz'
+            if [ '${{ matrix.version }}' = '1.8.7' ]; then
+              runtime_archive="$runtime_lib/libruby18.a"
+              extra_libs="$extra_libs -lwsock32"
+            else
+              runtime_archive="$runtime_lib/libmsvcrt-ruby191-static.a"
+              extra_libs="$extra_libs -lws2_32 -limagehlp -lshlwapi"
+            fi
+            cc -I"$runtime_include" tests/legacy-ruby-smoke.c "$runtime_archive" \
+              $extra_libs -o build/artifact/legacy-ruby-smoke.exe \
+              >> artifacts/mkxp-z-ruby-${{ matrix.version }}-build.log 2>&1
+            result=$?
+          fi
+          if [ "$result" -eq 0 ]; then
+            (cd build/artifact && ./legacy-ruby-smoke.exe '${{ matrix.version }}') \
+              >> artifacts/mkxp-z-ruby-${{ matrix.version }}-build.log 2>&1
+            result=$?
+          fi
+          echo "exit_code=$result" >> "$GITHUB_OUTPUT"
+          tail -n 100 artifacts/mkxp-z-ruby-${{ matrix.version }}-build.log
+          exit 0
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: mkxp-z-ruby-${{ matrix.version }}-build-log
+          path: artifacts/*.log
+          if-no-files-found: warn
+
+      - name: Upload linked mkxp-z package
+        if: steps.compile.outputs.exit_code == '0'
+        uses: actions/upload-artifact@v7
+        with:
+          name: mkxp-z-ruby-${{ matrix.version }}-windows-i686
+          path: build/artifact/
+          if-no-files-found: error
 
       - name: Check build result
         if: always()

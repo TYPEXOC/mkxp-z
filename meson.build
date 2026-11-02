@@ -224,11 +224,19 @@ foreach install_tag : global_install_tags
         install_tag: install_tag,
     )
 
-    if ruby.type_name() == 'internal'
+    if ruby.type_name() == 'internal' and ruby_build_dir != ''
         meson.add_install_script(
             common.get_variable('install_directory'),
             ruby_build_dir / 'dist' / 'lib' / 'ruby' / (get_option('mri_version') + '.0'),
             'stdlib',
+            install_tag: install_tag,
+        )
+    elif get_option('mri_runtime_root') != ''
+        ruby_stdlib_version = get_option('mri_version') == '1.8.7' ? '1.8' : '1.9.1'
+        meson.add_install_script(
+            common.get_variable('install_directory'),
+            join_paths(get_option('mri_runtime_root'), 'stdlib', 'lib', 'ruby', ruby_stdlib_version),
+            join_paths('lib', 'ruby', ruby_stdlib_version),
             install_tag: install_tag,
         )
     endif

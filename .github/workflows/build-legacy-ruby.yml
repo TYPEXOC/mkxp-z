@@ -125,6 +125,7 @@ jobs:
           mkdir -p artifacts
           runtime_root="$(cygpath -m "$(pwd)/runtime-package/ruby-${{ matrix.version }}")"
           meson setup --prefix "$(pwd)/build/artifact" --buildtype release -Dstrip=true \
+            -Dgfx_backend=gl -Dangle=disabled \
             -Dmri_version='${{ matrix.version }}' \
             -Dmri_runtime_root="$runtime_root" \
             build > artifacts/mkxp-z-ruby-${{ matrix.version }}-build.log 2>&1

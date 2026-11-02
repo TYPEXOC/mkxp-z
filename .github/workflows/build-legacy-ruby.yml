@@ -29,7 +29,7 @@ jobs:
             ref: ruby_1_9_3
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install MSYS2 build tools
         uses: msys2/setup-msys2@v2
@@ -66,7 +66,7 @@ jobs:
 
       - name: Upload runtime and build log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ruby-${{ matrix.version }}-windows-i686
           path: artifacts/

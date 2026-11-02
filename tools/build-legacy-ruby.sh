@@ -36,6 +36,9 @@ case "$version" in
       grep -q "^#define ${macro} 1$" config.h || \
         sed -i "/^#endif/i #define ${macro} 1" config.h
     done
+    # Ruby 1.8's Windows GNUmakefile hard-codes shared mode, ignoring
+    # --disable-shared and making the static-library target circular.
+    sed -i 's/^ENABLE_SHARED=yes$/ENABLE_SHARED=no/' GNUmakefile
     library=libruby18.a
     ;;
   1.9.3)

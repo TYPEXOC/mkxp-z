@@ -1249,6 +1249,13 @@ static void mriBindingExecute() {
     rb_enc_set_default_internal(rb_enc_from_encoding(rb_utf8_encoding()));
     rb_enc_set_default_external(rb_enc_from_encoding(rb_utf8_encoding()));
 #else
+#if RAPI_FULL >= 190
+    /* Ruby 1.9 exposes the embedding setup API and needs it on Windows. */
+    int argc = 0;
+    char **argv = 0;
+    ruby_sysinit(&argc, &argv);
+    RUBY_INIT_STACK;
+#endif
     ruby_init();
     rb_eval_string("$KCODE='U'");
 #ifdef __WIN32__

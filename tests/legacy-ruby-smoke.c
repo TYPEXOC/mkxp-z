@@ -22,7 +22,8 @@ int main(int argc, char **argv)
 
     strcpy(expected_version, argv[1]);
 
-#if defined(RUBY_API_VERSION_MAJOR) && RUBY_API_VERSION_MAJOR >= 2
+#if defined(RUBY_API_VERSION_MAJOR) && \
+    (RUBY_API_VERSION_MAJOR > 1 || RUBY_API_VERSION_MINOR >= 9)
     ruby_sysinit(&argc, &argv);
     RUBY_INIT_STACK;
 #endif

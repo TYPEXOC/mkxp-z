@@ -89,7 +89,24 @@ EOF
 esac
 
 if [[ "$version" == 1.8.7 ]]; then
-  make -j8 ENABLE_SHARED=no "CFLAGS=$build_flags" "$library"
+  # The Ruby 1.8 Windows makefiles make the static archive depend on
+  # miniruby.exe/ruby.exp, while those targets also depend on the archive.
+  # Build only the configured runtime objects from Makefile, then archive them
+  # directly. This avoids the legacy GNUmakefile's circular target graph and
+  # does not build the standalone miniruby executable.
+  object_list_makefile="$build_root/print-ruby-objects.mk"
+  cat > "$object_list_makefile" <<'EOF'
+.PHONY: print-ruby-objects
+print-ruby-objects:
+	@echo $(OBJS) $(DMYEXT)
+EOF
+  object_list=$(make -s -f Makefile -f "$object_list_makefile" print-ruby-objects)
+  read -r -a ruby_objects <<< "$object_list"
+  test "${#ruby_objects[@]}" -gt 0
+  make -f Makefile -j8 "CFLAGS=$build_flags" "${ruby_objects[@]}"
+  rm -f "$library"
+  ar rcs "$library" "${ruby_objects[@]}"
+  ranlib "$library"
 else
   make -j8 "CFLAGS=$build_flags" "BASERUBY=$build_root/baseruby.sh" "$library"
 fi

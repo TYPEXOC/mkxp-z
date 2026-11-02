@@ -11,6 +11,7 @@ on:
       - meson_options.txt
       - src/meson.build
       - binding/meson.build
+      - binding/binding-util.h
       - tools/build-legacy-ruby.sh
       - tools/ruby193-baseruby-compat.rb
       - tests/legacy-ruby-smoke.c

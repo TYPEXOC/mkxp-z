@@ -114,11 +114,13 @@ test -s "$library"
 
 mkdir -p "$artifact_dir/lib" "$artifact_dir/include/ruby" "$artifact_dir/metadata"
 cp "$library" "$artifact_dir/lib/"
-cp -R include/ruby/. "$artifact_dir/include/ruby/"
 if [[ "$version" == 1.9.3 ]]; then
+  cp -R include/ruby/. "$artifact_dir/include/ruby/"
   cp "$config_header" "$artifact_dir/include/ruby/config.h"
 else
-  cp config.h "$artifact_dir/include/ruby/config.h"
+  # Ruby 1.8.7 keeps its C API headers in the source root rather than
+  # include/ruby, unlike the newer Ruby branches.
+  cp ./*.h "$artifact_dir/include/ruby/"
 fi
 cp ./*.pc "$artifact_dir/metadata/" 2>/dev/null || true
 cp config.log Makefile "$artifact_dir/metadata/"

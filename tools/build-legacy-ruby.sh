@@ -5,11 +5,18 @@ version="$1"
 source_repo="$2"
 source_ref="$3"
 artifact_dir="$4"
+variant="${5:-release}"
 runner_temp="${RUNNER_TEMP:-/tmp}"
 if [[ "$runner_temp" =~ ^[A-Za-z]:[\\/] ]]; then
   runner_temp=$(cygpath -u "$runner_temp")
 fi
 build_root="$runner_temp/mkxp-z-ruby-${version}"
+if [[ "$variant" == debug ]]; then
+  build_root="$build_root-debug"
+elif [[ "$variant" != release ]]; then
+  echo "Unsupported build variant: $variant" >&2
+  exit 2
+fi
 source_dir="$build_root/source"
 
 mkdir -p "$build_root" "$artifact_dir"
@@ -21,7 +28,11 @@ autoconf
 
 case "$version" in
   1.8.7)
-    build_flags='-O2 -std=gnu89 -w'
+    if [[ "$variant" == debug ]]; then
+      build_flags='-O0 -g3 -fno-omit-frame-pointer -std=gnu89 -w'
+    else
+      build_flags='-O2 -std=gnu89 -w'
+    fi
     CFLAGS="$build_flags" ./configure \
       --build=i686-w64-mingw32 \
       --host=i686-w64-mingw32 \
@@ -43,7 +54,11 @@ case "$version" in
     ruby_stdlib_version=1.8
     ;;
   1.9.3)
-    build_flags='-O2 -std=gnu99 -Wno-incompatible-pointer-types -Wno-implicit-function-declaration'
+    if [[ "$variant" == debug ]]; then
+      build_flags='-O0 -g3 -fno-omit-frame-pointer -std=gnu99 -Wno-incompatible-pointer-types -Wno-implicit-function-declaration'
+    else
+      build_flags='-O2 -std=gnu99 -Wno-incompatible-pointer-types -Wno-implicit-function-declaration'
+    fi
     baseruby_compat="$(cygpath -u "$GITHUB_WORKSPACE")/tools/ruby193-baseruby-compat.rb"
     baseruby_wrapper="$build_root/baseruby.sh"
     cat > "$baseruby_wrapper" <<EOF
@@ -171,6 +186,7 @@ test -s "$library"
 
 mkdir -p "$artifact_dir/lib" "$artifact_dir/include/ruby" "$artifact_dir/metadata"
 cp "$library" "$artifact_dir/lib/"
+printf 'version=%s\nvariant=%s\ncflags=%s\n' "$version" "$variant" "$build_flags" > "$artifact_dir/metadata/build-variant.txt"
 if [[ "$version" == 1.9.3 ]]; then
   # Ruby 1.9 installs ruby.h at the include root and the headers referenced as
   # ruby/*.h in a nested directory. Preserve that layout so system headers
@@ -196,4 +212,10 @@ if [[ "$version" == 1.9.3 ]]; then
   cp rbconfig.rb "$artifact_dir/stdlib/lib/ruby/$ruby_stdlib_version/"
 fi
 ar t "$artifact_dir/lib/$library" | head -n 25
+if [[ "$variant" == debug ]]; then
+  objdump -h "$artifact_dir/lib/$library" | grep -q '\.debug_info' || {
+    echo "Debug runtime archive does not contain DWARF debug information" >&2
+    exit 1
+  }
+fi
 printf 'Built Ruby %s static runtime: %s\n' "$version" "$artifact_dir/lib/$library"

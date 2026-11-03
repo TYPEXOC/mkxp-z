@@ -30,9 +30,15 @@ jobs:
       matrix:
         include:
           - version: 1.8.7
+            variant: release
+            source: https://github.com/mkxp-z/ruby.git
+            ref: ruby_1_8_7
+          - version: 1.8.7
+            variant: debug
             source: https://github.com/mkxp-z/ruby.git
             ref: ruby_1_8_7
           - version: 1.9.3
+            variant: release
             source: https://github.com/ruby/ruby.git
             ref: ruby_1_9_3
 
@@ -65,18 +71,19 @@ jobs:
             '${{ matrix.version }}' \
             '${{ matrix.source }}' \
             '${{ matrix.ref }}' \
-            "$(pwd)/artifacts/ruby-${{ matrix.version }}" \
-            > "$(pwd)/artifacts/ruby-${{ matrix.version }}-build.log" 2>&1
+            "$(pwd)/artifacts/ruby-${{ matrix.version }}-${{ matrix.variant }}" \
+            '${{ matrix.variant }}' \
+            > "$(pwd)/artifacts/ruby-${{ matrix.version }}-${{ matrix.variant }}-build.log" 2>&1
           result=$?
           echo "exit_code=$result" >> "$GITHUB_OUTPUT"
-          tail -n 100 "$(pwd)/artifacts/ruby-${{ matrix.version }}-build.log"
+          tail -n 100 "$(pwd)/artifacts/ruby-${{ matrix.version }}-${{ matrix.variant }}-build.log"
           exit 0
 
       - name: Upload runtime and build log
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: ruby-${{ matrix.version }}-windows-i686
+          name: ruby-${{ matrix.version }}-${{ matrix.variant }}-windows-i686
           path: artifacts/
           if-no-files-found: warn
 
@@ -98,14 +105,17 @@ jobs:
         include:
           - version: '1.8.7'
             variant: release
+            runtime_variant: release
             buildtype: release
             strip: true
           - version: '1.9.3'
             variant: release
+            runtime_variant: release
             buildtype: release
             strip: true
           - version: '1.8.7'
             variant: debug
+            runtime_variant: debug
             buildtype: debug
             strip: false
 
@@ -115,7 +125,7 @@ jobs:
       - name: Download static Ruby runtime
         uses: actions/download-artifact@v8
         with:
-          name: ruby-${{ matrix.version }}-windows-i686
+          name: ruby-${{ matrix.version }}-${{ matrix.runtime_variant }}-windows-i686
           path: runtime-package
 
       - name: Install MSYS2 build tools
@@ -141,7 +151,7 @@ jobs:
         run: |
           set +e
           mkdir -p artifacts
-          runtime_root="$(cygpath -m "$(pwd)/runtime-package/ruby-${{ matrix.version }}")"
+          runtime_root="$(cygpath -m "$(pwd)/runtime-package/ruby-${{ matrix.version }}-${{ matrix.runtime_variant }}")"
           meson setup --prefix "$(pwd)/build/artifact" --buildtype '${{ matrix.buildtype }}' -Dstrip='${{ matrix.strip }}' \
             -Dgfx_backend=gl -Dangle=disabled \
             -Dmri_version='${{ matrix.version }}' \

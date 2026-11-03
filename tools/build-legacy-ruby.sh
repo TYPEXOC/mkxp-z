@@ -66,7 +66,6 @@ EOF
       --prefix="$artifact_dir/install" \
       --disable-shared \
       --disable-install-doc \
-      --with-static-linked-ext \
       --with-baseruby=/mingw64/bin/ruby.exe \
       --with-out-ext=ripper,sdbm
 
@@ -138,7 +137,7 @@ else
   # Follow Ruby's own extension build targets, selecting zlib as a statically
   # linked module and then add its initializer and object to the host archive.
   make -j8 "CFLAGS=$build_flags" miniruby
-  make -j8 "CFLAGS=$build_flags" EXTS=zlib exts
+  make -j8 "CFLAGS=$build_flags" EXTS=zlib EXTSTATIC=zlib exts
   test -s ext/extinit.o
   test -s ext/zlib/zlib.o
   ar d "$library" dmyext.o

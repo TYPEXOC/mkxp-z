@@ -37,8 +37,11 @@ int main(int argc, char **argv)
     rb_eval_string("$KCODE='U'");
 #endif
     load_path = rb_gv_get("$:");
-    if (TYPE(load_path) != T_ARRAY)
-        return 3;
+    /* ruby_init() alone does not initialize $: on every legacy MRI. */
+    if (TYPE(load_path) != T_ARRAY) {
+        load_path = rb_ary_new();
+        rb_gv_set("$:", load_path);
+    }
     rb_ary_clear(load_path);
     rb_ary_push(load_path, rb_str_new2(argv[2]));
     snprintf(script, sizeof(script),
@@ -56,6 +59,7 @@ int main(int argc, char **argv)
     rb_eval_string(script);
 #endif
 
-    printf("Ruby %s initialized monitor.rb and zlib\n", expected_version);
+    printf("Ruby %s initialized monitor.rb, zlib, and file status APIs\n",
+           expected_version);
     return 0;
 }

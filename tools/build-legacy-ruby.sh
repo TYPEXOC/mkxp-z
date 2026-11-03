@@ -29,9 +29,9 @@ autoconf
 case "$version" in
   1.8.7)
     if [[ "$variant" == debug ]]; then
-      build_flags='-O0 -g3 -fno-omit-frame-pointer -std=gnu89 -w'
+      build_flags='-O0 -g3 -fno-omit-frame-pointer -std=gnu89 -w -D_FILE_OFFSET_BITS=64'
     else
-      build_flags='-O2 -std=gnu89 -w'
+      build_flags='-O2 -std=gnu89 -w -D_FILE_OFFSET_BITS=64'
     fi
     CFLAGS="$build_flags" ./configure \
       --build=i686-w64-mingw32 \

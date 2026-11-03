@@ -31,6 +31,9 @@
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_sound.h>
+#if defined(__WIN32__)
+#include <SDL_syswm.h>
+#endif
 #include <SDL_ttf.h>
 
 #include <cassert>
@@ -215,6 +218,24 @@ static void setupWindowIcon(const Config &conf, SDL_Window *win) {
 
   if (iconImg) {
     SDL_SetWindowIcon(win, iconImg);
+#if defined(__WIN32__)
+    /* SDL_SetWindowIcon updates WM_GETICON, which fixes the title-bar icon.
+     * Windows may still use the window class icons for the taskbar button,
+     * so mirror the configured game icon there as well. */
+    SDL_SysWMinfo wmInfo;
+    SDL_VERSION(&wmInfo.version);
+    if (SDL_GetWindowWMInfo(win, &wmInfo) &&
+        wmInfo.subsystem == SDL_SYSWM_WINDOWS) {
+      HWND hwnd = wmInfo.info.win.window;
+      HICON bigIcon = (HICON)SendMessage(hwnd, WM_GETICON, ICON_BIG, 0);
+      HICON smallIcon = (HICON)SendMessage(hwnd, WM_GETICON, ICON_SMALL, 0);
+
+      if (bigIcon)
+        SetClassLongPtr(hwnd, GCLP_HICON, (LONG_PTR)bigIcon);
+      if (smallIcon)
+        SetClassLongPtr(hwnd, GCLP_HICONSM, (LONG_PTR)smallIcon);
+    }
+#endif
     SDL_FreeSurface(iconImg);
   }
 }

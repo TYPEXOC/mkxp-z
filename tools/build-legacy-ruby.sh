@@ -16,11 +16,6 @@ mkdir -p "$build_root" "$artifact_dir"
 git clone --depth 1 --branch "$source_ref" "$source_repo" "$source_dir"
 cd "$source_dir"
 
-# RGSS game scripts commonly require zlib for data and save handling. Package
-# it as a statically linked Ruby extension so the host does not depend on an
-# external Ruby DLL or extension directory.
-grep -qx 'zlib' ext/Setup || printf '\nzlib\n' >> ext/Setup
-
 # These legacy branches keep configure.in in Git but do not check in configure.
 autoconf
 
@@ -105,6 +100,19 @@ EOF
 esac
 
 if [[ "$version" == 1.8.7 ]]; then
+  # Ruby 1.8 already compiles zlib.c into its core archive, but the default
+  # dmyext.c leaves Init_zlib unregistered. Register the built-in extension
+  # exactly as ext/extinit.c would, so require 'zlib' works in the host.
+  cat > dmyext.c <<'EOF'
+#include "ruby.h"
+void Init_zlib(void);
+void ruby_init_ext(const char *, void (*)(void));
+void Init_ext(void)
+{
+  ruby_init_ext("zlib.so", Init_zlib);
+}
+EOF
+
   # The Ruby 1.8 Windows makefiles make the static archive depend on
   # miniruby.exe/ruby.exp, while those targets also depend on the archive.
   # Build only the configured runtime objects from Makefile, then archive them
@@ -125,6 +133,17 @@ EOF
   ranlib "$library"
 else
   make -j8 "CFLAGS=$build_flags" "BASERUBY=$build_root/baseruby.sh" "$library"
+
+  # Building the static archive target alone omits Ruby's native extensions.
+  # Follow Ruby's own extension build targets, selecting zlib as a statically
+  # linked module and then add its initializer and object to the host archive.
+  make -j8 "CFLAGS=$build_flags" miniruby
+  make -j8 "CFLAGS=$build_flags" EXTS=zlib exts
+  test -s ext/extinit.o
+  test -s ext/zlib/zlib.o
+  ar d "$library" dmyext.o
+  ar rcs "$library" ext/extinit.o ext/zlib/zlib.o
+  ranlib "$library"
 fi
 test -s "$library"
 

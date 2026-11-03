@@ -11,7 +11,7 @@
 int main(int argc, char **argv)
 {
     char expected_version[32];
-    char script[256];
+    char script[1024];
     VALUE load_path;
 #ifndef LEGACY_RUBY_18
     int state = 0;
@@ -43,8 +43,12 @@ int main(int argc, char **argv)
              expected_version);
 #ifndef LEGACY_RUBY_18
     rb_eval_string_protect(script, &state);
-    if (state)
+    if (state) {
+        VALUE exception = rb_errinfo();
+        VALUE message = rb_obj_as_string(exception);
+        fprintf(stderr, "Ruby smoke test failed: %s\n", StringValueCStr(message));
         return 4;
+    }
 #else
     rb_eval_string(script);
 #endif

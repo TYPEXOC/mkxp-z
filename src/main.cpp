@@ -648,10 +648,14 @@ int main(int argc, char *argv[]) {
     }
 #endif
 
-    /* OSX and Windows have their own native ways of
-     * dealing with icons; don't interfere with them */
+    /* macOS supplies the application icon through its bundle. On Windows,
+     * preserve the executable resource icon unless the game specifies an
+     * iconPath; this lets a launcher provide the original game's icon. */
 #ifdef __LINUX__
     setupWindowIcon(conf, win);
+#elif defined(__WIN32__)
+    if (!conf.iconPath.empty())
+        setupWindowIcon(conf, win);
 #else
     (void)setupWindowIcon;
 #endif

@@ -138,14 +138,14 @@ else
   # linked module and then add its initializer and object to the host archive.
   make -j8 "CFLAGS=$build_flags" miniruby
   rm -f ext/zlib/Makefile ext/zlib/extconf.h ext/zlib/zlib.so \
-    ext/zlib/zlib.lib ext/extinit.c ext/extinit.o
+    ext/zlib/zlib.a ext/extinit.c ext/extinit.o
   make -j8 "CFLAGS=$build_flags" EXTS=zlib EXTSTATIC=static,zlib configure-ext
   make -j8 -f exts.mk static
   make -j8 "CFLAGS=$build_flags" ext/extinit.o
   test -s ext/extinit.o
-  test -s ext/zlib/zlib.lib
+  test -s ext/zlib/zlib.a
   mkdir -p "$build_root/zlib-objects"
-  (cd "$build_root/zlib-objects" && ar x "$source_dir/ext/zlib/zlib.lib")
+  (cd "$build_root/zlib-objects" && ar x "$source_dir/ext/zlib/zlib.a")
   zlib_objects=("$build_root"/zlib-objects/*.o)
   test -s "${zlib_objects[0]}"
   ar d "$library" dmyext.o

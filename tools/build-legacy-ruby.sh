@@ -16,6 +16,11 @@ mkdir -p "$build_root" "$artifact_dir"
 git clone --depth 1 --branch "$source_ref" "$source_repo" "$source_dir"
 cd "$source_dir"
 
+# RGSS game scripts commonly require zlib for data and save handling. Package
+# it as a statically linked Ruby extension so the host does not depend on an
+# external Ruby DLL or extension directory.
+grep -qx 'zlib' ext/Setup || printf '\nzlib\n' >> ext/Setup
+
 # These legacy branches keep configure.in in Git but do not check in configure.
 autoconf
 
@@ -28,6 +33,7 @@ case "$version" in
       --target=i686-w64-mingw32 \
       --prefix="$artifact_dir/install" \
       --disable-shared \
+      --with-static-linked-ext \
       --disable-install-doc
 
     # The old configure test misses const-correct MinGW declarations and then

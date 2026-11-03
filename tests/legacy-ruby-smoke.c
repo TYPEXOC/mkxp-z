@@ -11,7 +11,7 @@
 int main(int argc, char **argv)
 {
     char expected_version[32];
-    char script[128];
+    char script[256];
     VALUE load_path;
 #ifndef LEGACY_RUBY_18
     int state = 0;
@@ -39,7 +39,7 @@ int main(int argc, char **argv)
     rb_ary_clear(load_path);
     rb_ary_push(load_path, rb_str_new2(argv[2]));
     snprintf(script, sizeof(script),
-             "require 'monitor'; abort unless RUBY_VERSION == '%s' && defined?(Monitor)",
+             "require 'monitor'; require 'zlib'; abort unless RUBY_VERSION == '%s' && defined?(Monitor) && Zlib::Inflate.inflate(Zlib::Deflate.deflate('ok')) == 'ok'",
              expected_version);
 #ifndef LEGACY_RUBY_18
     rb_eval_string_protect(script, &state);
@@ -49,6 +49,6 @@ int main(int argc, char **argv)
     rb_eval_string(script);
 #endif
 
-    printf("Ruby %s initialized and loaded monitor.rb\n", expected_version);
+    printf("Ruby %s initialized monitor.rb and zlib\n", expected_version);
     return 0;
 }

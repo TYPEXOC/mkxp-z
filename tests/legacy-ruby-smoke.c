@@ -42,7 +42,7 @@ int main(int argc, char **argv)
     rb_ary_clear(load_path);
     rb_ary_push(load_path, rb_str_new2(argv[2]));
     snprintf(script, sizeof(script),
-             "require 'monitor'; require 'zlib'; abort unless RUBY_VERSION == '%s' && defined?(Monitor) && Zlib::Inflate.inflate(Zlib::Deflate.deflate('ok')) == 'ok'",
+             "require 'monitor'; require 'zlib'; abort unless RUBY_VERSION == '%s' && defined?(Monitor) && Zlib::Inflate.inflate(Zlib::Deflate.deflate('ok')) == 'ok' && FileTest.exist?('.') && File.exist?('.') && File.stat('.').directory?",
              expected_version);
 #ifndef LEGACY_RUBY_18
     rb_eval_string_protect(script, &state);

@@ -89,13 +89,25 @@ jobs:
           exit "$result"
 
   build-mkxp-z:
-    name: mkxp-z with Ruby ${{ matrix.version }} (Windows i686)
+    name: mkxp-z with Ruby ${{ matrix.version }} (${{ matrix.variant }}, Windows i686)
     needs: build
     runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
-        version: ['1.8.7', '1.9.3']
+        include:
+          - version: '1.8.7'
+            variant: release
+            buildtype: release
+            strip: true
+          - version: '1.9.3'
+            variant: release
+            buildtype: release
+            strip: true
+          - version: '1.8.7'
+            variant: debug
+            buildtype: debug
+            strip: false
 
     steps:
       - uses: actions/checkout@v7
@@ -130,18 +142,18 @@ jobs:
           set +e
           mkdir -p artifacts
           runtime_root="$(cygpath -m "$(pwd)/runtime-package/ruby-${{ matrix.version }}")"
-          meson setup --prefix "$(pwd)/build/artifact" --buildtype release -Dstrip=true \
+          meson setup --prefix "$(pwd)/build/artifact" --buildtype '${{ matrix.buildtype }}' -Dstrip='${{ matrix.strip }}' \
             -Dgfx_backend=gl -Dangle=disabled \
             -Dmri_version='${{ matrix.version }}' \
             -Dmri_runtime_root="$runtime_root" \
-            build > artifacts/mkxp-z-ruby-${{ matrix.version }}-build.log 2>&1
+            build > artifacts/mkxp-z-ruby-${{ matrix.version }}-${{ matrix.variant }}-build.log 2>&1
           result=$?
           if [ "$result" -eq 0 ]; then
-            ninja -C build >> artifacts/mkxp-z-ruby-${{ matrix.version }}-build.log 2>&1
+            ninja -C build >> artifacts/mkxp-z-ruby-${{ matrix.version }}-${{ matrix.variant }}-build.log 2>&1
             result=$?
           fi
           if [ "$result" -eq 0 ]; then
-            meson install -C build --no-rebuild --tags mkxp-z >> artifacts/mkxp-z-ruby-${{ matrix.version }}-build.log 2>&1
+            meson install -C build --no-rebuild --tags mkxp-z >> artifacts/mkxp-z-ruby-${{ matrix.version }}-${{ matrix.variant }}-build.log 2>&1
             result=$?
           fi
           if [ "$result" -eq 0 ]; then
@@ -161,23 +173,23 @@ jobs:
             fi
             cc $ruby_compat_flags -idirafter "$runtime_include" tests/legacy-ruby-smoke.c "$runtime_archive" \
               $extra_libs -o build/artifact/legacy-ruby-smoke.exe \
-              >> artifacts/mkxp-z-ruby-${{ matrix.version }}-build.log 2>&1
+              >> artifacts/mkxp-z-ruby-${{ matrix.version }}-${{ matrix.variant }}-build.log 2>&1
             result=$?
           fi
           if [ "$result" -eq 0 ]; then
             (cd build/artifact && ./legacy-ruby-smoke.exe '${{ matrix.version }}' "$runtime_stdlib_dir") \
-              >> artifacts/mkxp-z-ruby-${{ matrix.version }}-build.log 2>&1
+              >> artifacts/mkxp-z-ruby-${{ matrix.version }}-${{ matrix.variant }}-build.log 2>&1
             result=$?
           fi
           echo "exit_code=$result" >> "$GITHUB_OUTPUT"
-          tail -n 100 artifacts/mkxp-z-ruby-${{ matrix.version }}-build.log
+          tail -n 100 artifacts/mkxp-z-ruby-${{ matrix.version }}-${{ matrix.variant }}-build.log
           exit 0
 
       - name: Upload build log
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: mkxp-z-ruby-${{ matrix.version }}-build-log
+          name: mkxp-z-ruby-${{ matrix.version }}-${{ matrix.variant }}-build-log
           path: artifacts/*.log
           if-no-files-found: warn
 
@@ -185,7 +197,7 @@ jobs:
         if: steps.compile.outputs.exit_code == '0'
         uses: actions/upload-artifact@v7
         with:
-          name: mkxp-z-ruby-${{ matrix.version }}-windows-i686
+          name: mkxp-z-ruby-${{ matrix.version }}-${{ matrix.variant }}-windows-i686
           path: build/artifact/
           if-no-files-found: error
 

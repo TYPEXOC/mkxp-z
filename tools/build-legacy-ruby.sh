@@ -139,7 +139,9 @@ else
   make -j8 "CFLAGS=$build_flags" miniruby
   rm -f ext/zlib/Makefile ext/zlib/extconf.h ext/zlib/zlib.so \
     ext/zlib/zlib.lib ext/extinit.c ext/extinit.o
-  make -j8 "CFLAGS=$build_flags" EXTS=zlib EXTSTATIC=static,zlib exts
+  make -j8 "CFLAGS=$build_flags" EXTS=zlib EXTSTATIC=static,zlib configure-ext
+  make -j8 -f exts.mk static
+  make -j8 "CFLAGS=$build_flags" ext/extinit.o
   test -s ext/extinit.o
   test -s ext/zlib/zlib.lib
   mkdir -p "$build_root/zlib-objects"

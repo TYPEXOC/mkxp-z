@@ -33,29 +33,49 @@ permissions:
   contents: read
 
 jobs:
+  select:
+    name: Select build variants
+    runs-on: ubuntu-latest
+    outputs:
+      ruby_matrix: ${{ steps.variants.outputs.ruby_matrix }}
+      mkxp_matrix: ${{ steps.variants.outputs.mkxp_matrix }}
+    steps:
+      - id: variants
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BUILD_VARIANT: ${{ inputs.build_variant }}
+        run: |
+          if [[ "$EVENT_NAME" == "push" ]]; then
+            selected=release
+          else
+            selected="${BUILD_VARIANT:-release}"
+          fi
+
+          ruby_release='{"include":[{"version":"1.8.7","variant":"release","source":"https://github.com/mkxp-z/ruby.git","ref":"ruby_1_8_7"},{"version":"1.9.3","variant":"release","source":"https://github.com/ruby/ruby.git","ref":"ruby_1_9_3"}]}'
+          ruby_debug='{"include":[{"version":"1.8.7","variant":"debug","source":"https://github.com/mkxp-z/ruby.git","ref":"ruby_1_8_7"}]}'
+          ruby_all='{"include":[{"version":"1.8.7","variant":"release","source":"https://github.com/mkxp-z/ruby.git","ref":"ruby_1_8_7"},{"version":"1.9.3","variant":"release","source":"https://github.com/ruby/ruby.git","ref":"ruby_1_9_3"},{"version":"1.8.7","variant":"debug","source":"https://github.com/mkxp-z/ruby.git","ref":"ruby_1_8_7"}]}'
+          mkxp_release='{"include":[{"version":"1.8.7","variant":"release","runtime_variant":"release","buildtype":"release","strip":true},{"version":"1.9.3","variant":"release","runtime_variant":"release","buildtype":"release","strip":true}]}'
+          mkxp_debug='{"include":[{"version":"1.8.7","variant":"debug","runtime_variant":"debug","buildtype":"debug","strip":false}]}'
+          mkxp_all='{"include":[{"version":"1.8.7","variant":"release","runtime_variant":"release","buildtype":"release","strip":true},{"version":"1.9.3","variant":"release","runtime_variant":"release","buildtype":"release","strip":true},{"version":"1.8.7","variant":"debug","runtime_variant":"debug","buildtype":"debug","strip":false}]}'
+
+          case "$selected" in
+            release) ruby_matrix="$ruby_release"; mkxp_matrix="$mkxp_release" ;;
+            debug) ruby_matrix="$ruby_debug"; mkxp_matrix="$mkxp_debug" ;;
+            all) ruby_matrix="$ruby_all"; mkxp_matrix="$mkxp_all" ;;
+            *) echo "Unsupported build variant: $selected" >&2; exit 1 ;;
+          esac
+
+          echo "ruby_matrix=$ruby_matrix" >> "$GITHUB_OUTPUT"
+          echo "mkxp_matrix=$mkxp_matrix" >> "$GITHUB_OUTPUT"
+
   build:
     name: Ruby ${{ matrix.version }} (Windows i686)
-    if: >-
-      ${{ (github.event_name == 'push' && matrix.variant == 'release') ||
-          (github.event_name == 'workflow_dispatch' &&
-           (inputs.build_variant == matrix.variant || inputs.build_variant == 'all')) }}
+    needs: select
     runs-on: windows-latest
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - version: 1.8.7
-            variant: release
-            source: https://github.com/mkxp-z/ruby.git
-            ref: ruby_1_8_7
-          - version: 1.8.7
-            variant: debug
-            source: https://github.com/mkxp-z/ruby.git
-            ref: ruby_1_8_7
-          - version: 1.9.3
-            variant: release
-            source: https://github.com/ruby/ruby.git
-            ref: ruby_1_9_3
+      matrix: ${{ fromJSON(needs.select.outputs.ruby_matrix) }}
 
     steps:
       - uses: actions/checkout@v7
@@ -112,32 +132,12 @@ jobs:
 
   build-mkxp-z:
     name: mkxp-z with Ruby ${{ matrix.version }} (${{ matrix.variant }}, Windows i686)
-    needs: build
-    if: >-
-      ${{ !cancelled() && needs.build.result != 'failure' &&
-          ((github.event_name == 'push' && matrix.variant == 'release') ||
-           (github.event_name == 'workflow_dispatch' &&
-            (inputs.build_variant == matrix.variant || inputs.build_variant == 'all'))) }}
+    needs: [select, build]
+    if: ${{ !cancelled() && needs.build.result != 'failure' }}
     runs-on: windows-latest
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - version: '1.8.7'
-            variant: release
-            runtime_variant: release
-            buildtype: release
-            strip: true
-          - version: '1.9.3'
-            variant: release
-            runtime_variant: release
-            buildtype: release
-            strip: true
-          - version: '1.8.7'
-            variant: debug
-            runtime_variant: debug
-            buildtype: debug
-            strip: false
+      matrix: ${{ fromJSON(needs.select.outputs.mkxp_matrix) }}
     steps:
       - uses: actions/checkout@v7
 

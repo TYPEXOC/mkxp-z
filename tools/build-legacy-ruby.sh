@@ -141,6 +141,21 @@ else
     ext/zlib/zlib.a ext/extinit.c ext/extinit.o
   make -j8 "CFLAGS=$build_flags" EXTS=zlib EXTSTATIC=static,zlib configure-ext
   make -j8 -f exts.mk static
+  # The Ruby 1.9 extmk pass creates an empty extinit.c when its static
+  # extension list is not supplied through configure-time EXTSTATIC. The
+  # zlib archive is built, but require 'zlib' cannot discover it. Register
+  # the one extension we intentionally include, matching Ruby 1.8's
+  # ruby_init_ext convention.
+  cat > ext/extinit.c <<'EOF'
+#include "ruby.h"
+void Init_zlib(void);
+void ruby_init_ext(const char *, void (*)(void));
+void Init_ext(void)
+{
+  ruby_init_ext("zlib.so", Init_zlib);
+}
+EOF
+  rm -f ext/extinit.o
   make -j8 "CFLAGS=$build_flags" ext/extinit.o
   test -s ext/extinit.o
   test -s ext/zlib/zlib.a

@@ -51,6 +51,12 @@ extern "C" {
 #endif
 }
 
+#if RAPI_MAJOR == 1 && RAPI_FULL >= 190
+/* ruby_options() normally invokes Init_ext() for static extensions, but the
+ * Ruby 1.9 embedding path below initializes MRI directly and never calls it. */
+extern "C" void Init_ext(void);
+#endif
+
 #ifdef __WIN32__
 #include "binding-mri-win32.h"
 #endif
@@ -1257,6 +1263,10 @@ static void mriBindingExecute() {
     RUBY_INIT_STACK;
 #endif
     ruby_init();
+#if RAPI_FULL >= 190
+    /* Match the static-extension initialization performed by ruby_options(). */
+    Init_ext();
+#endif
     rb_eval_string("$KCODE='U'");
 #ifdef __WIN32__
     if (!conf.winConsole) {

@@ -31,6 +31,8 @@ int main(int argc, char **argv)
     ruby_init();
 #ifndef LEGACY_RUBY_18
     /* Match mkxp-z's RAPI_MAJOR < 2 initialization path. */
+    extern void Init_ext(void);
+    Init_ext();
     rb_eval_string("$KCODE='U'");
 #endif
     load_path = rb_gv_get("$:");

@@ -27,11 +27,14 @@
 #include <SDL_thread.h>
 #include <SDL_touch.h>
 #include <SDL_rect.h>
+#include <SDL_video.h>
 
 #include <al.h>
 #include <alc.h>
 #include <alext.h>
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
 
 #include "sharedstate.h"
 #include "graphics.h"
@@ -112,6 +115,45 @@ enum
 };
 
 static uint32_t usrIdStart;
+
+#ifndef NDEBUG
+static void traceKeyboardEvent(const char *name, const SDL_KeyboardEvent &event,
+                               SDL_Window *win, bool windowFocused)
+{
+    const char *logPath = std::getenv("MKXPZ_INPUT_TRACE");
+    if (!logPath || !logPath[0])
+        return;
+
+    FILE *log = std::fopen(logPath, "a");
+    if (!log)
+        return;
+
+    std::fprintf(log,
+                 "%u %s scancode=%d keycode=%d repeat=%d mods=%u "
+                 "windowFocused=%d sdlKeyboardFocus=%d\n",
+                 SDL_GetTicks(), name, event.keysym.scancode,
+                 event.keysym.sym, event.repeat, event.keysym.mod,
+                 windowFocused, SDL_GetKeyboardFocus() == win);
+    std::fclose(log);
+}
+
+static void traceWindowFocus(const char *name, SDL_Window *win,
+                             bool windowFocused)
+{
+    const char *logPath = std::getenv("MKXPZ_INPUT_TRACE");
+    if (!logPath || !logPath[0])
+        return;
+
+    FILE *log = std::fopen(logPath, "a");
+    if (!log)
+        return;
+
+    std::fprintf(log, "%u %s windowFocused=%d sdlKeyboardFocus=%d\n",
+                 SDL_GetTicks(), name, windowFocused,
+                 SDL_GetKeyboardFocus() == win);
+    std::fclose(log);
+}
+#endif
 
 bool EventThread::allocUserEvents()
 {
@@ -295,12 +337,18 @@ void EventThread::process(RGSSThreadData &rtData)
                         
                     case SDL_WINDOWEVENT_FOCUS_GAINED :
                         windowFocused = true;
+#ifndef NDEBUG
+                        traceWindowFocus("FOCUS_GAINED", win, windowFocused);
+#endif
                         updateCursorState(cursorInWindow && windowFocused && !sMenu, gameScreen);
                         
                         break;
                         
                     case SDL_WINDOWEVENT_FOCUS_LOST :
                         windowFocused = false;
+#ifndef NDEBUG
+                        traceWindowFocus("FOCUS_LOST", win, windowFocused);
+#endif
                         updateCursorState(cursorInWindow && windowFocused && !sMenu, gameScreen);
                         resetInputStates();
                         
@@ -323,6 +371,9 @@ void EventThread::process(RGSSThreadData &rtData)
                 break;
                 
             case SDL_KEYDOWN :
+#ifndef NDEBUG
+                traceKeyboardEvent("KEYDOWN", event.key, win, windowFocused);
+#endif
                 if (event.key.keysym.scancode == SDL_SCANCODE_RETURN &&
                     (event.key.keysym.mod & toggleFSMod))
                 {
@@ -408,6 +459,9 @@ void EventThread::process(RGSSThreadData &rtData)
                 break;
                 
             case SDL_KEYUP :
+#ifndef NDEBUG
+                traceKeyboardEvent("KEYUP", event.key, win, windowFocused);
+#endif
                 if (event.key.keysym.scancode == SDL_SCANCODE_F12)
                 {
                     if (!rtData.config.enableReset)

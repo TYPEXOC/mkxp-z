@@ -11,6 +11,7 @@ on:
       - meson_options.txt
       - src/meson.build
       - binding/meson.build
+      - binding/binding-mri.cpp
       - binding/binding-util.h
       - binding/http-binding.cpp
       - tools/build-legacy-ruby.sh

@@ -1260,8 +1260,9 @@ static void mriBindingExecute() {
     int argc = 0;
     char **argv = 0;
     ruby_sysinit(&argc, &argv);
-    RUBY_INIT_STACK;
 #endif
+    /* MRI's own main initializes the main-thread GC stack before ruby_init(). */
+    RUBY_INIT_STACK;
     ruby_init();
 #if RAPI_FULL >= 190
     /* Match the static-extension initialization performed by ruby_options(). */

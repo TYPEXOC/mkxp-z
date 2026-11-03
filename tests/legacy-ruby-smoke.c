@@ -25,8 +25,9 @@ int main(int argc, char **argv)
 #if defined(RUBY_API_VERSION_MAJOR) && \
     (RUBY_API_VERSION_MAJOR > 1 || RUBY_API_VERSION_MINOR >= 9)
     ruby_sysinit(&argc, &argv);
-    RUBY_INIT_STACK;
 #endif
+    /* Match MRI's embedding contract on both Ruby 1.8 and 1.9. */
+    RUBY_INIT_STACK;
 
     ruby_init();
 #ifndef LEGACY_RUBY_18

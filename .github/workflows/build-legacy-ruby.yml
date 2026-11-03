@@ -34,10 +34,6 @@ jobs:
             variant: release
             source: https://github.com/mkxp-z/ruby.git
             ref: ruby_1_8_7
-          - version: 1.8.7
-            variant: debug
-            source: https://github.com/mkxp-z/ruby.git
-            ref: ruby_1_8_7
           - version: 1.9.3
             variant: release
             source: https://github.com/ruby/ruby.git
@@ -114,12 +110,6 @@ jobs:
             runtime_variant: release
             buildtype: release
             strip: true
-          - version: '1.8.7'
-            variant: debug
-            runtime_variant: debug
-            buildtype: debug
-            strip: false
-
     steps:
       - uses: actions/checkout@v7
 

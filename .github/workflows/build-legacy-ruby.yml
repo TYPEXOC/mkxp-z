@@ -14,6 +14,7 @@ on:
       - binding/binding-mri.cpp
       - binding/binding-util.h
       - binding/http-binding.cpp
+      - src/main.cpp
       - tools/build-legacy-ruby.sh
       - tools/ruby193-baseruby-compat.rb
       - tests/legacy-ruby-smoke.c

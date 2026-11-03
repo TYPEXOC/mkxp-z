@@ -217,8 +217,16 @@ end
 def memcpy_string(dst, src)
 	i = 0
 	src.each_byte do |b|
-		dst.setbyte(i, b)
+		set_string_byte(dst, i, b)
 		i += 1
+	end
+end
+
+def set_string_byte(string, index, value)
+	if string.respond_to?(:setbyte)
+		string.setbyte(index, value)
+	else
+		string[index, 1] = [value].pack('C')
 	end
 end
 
@@ -281,7 +289,7 @@ module Win32API_Impl
 				Scancodes::WIN32.each do |name, val|
 					pressed = common_keystate(val) == 1
 
-					out_states.setbyte(val, pressed ? PRESSED_BIT : 0)
+					set_string_byte(out_states, val, pressed ? PRESSED_BIT : 0)
 				end
 				return 1
 			end
@@ -343,7 +351,7 @@ module Win32API_Impl
 end
 
 def kappatalize(s)
-	s[0] = s[0].upcase
+	s[0, 1] = s[0, 1].upcase
 	return s
 end
 

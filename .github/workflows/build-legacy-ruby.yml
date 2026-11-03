@@ -25,6 +25,7 @@ on:
       - binding/binding-util.h
       - binding/http-binding.cpp
       - src/main.cpp
+      - scripts/preload/win32_wrap.rb
       - tools/build-legacy-ruby.sh
       - tools/ruby193-baseruby-compat.rb
       - tests/legacy-ruby-smoke.c

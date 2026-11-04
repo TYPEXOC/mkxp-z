@@ -143,6 +143,7 @@ RB_METHOD(mkxpPowerState);
 RB_METHOD(mkxpSettingsMenu);
 RB_METHOD(mkxpCpuCount);
 RB_METHOD(mkxpSystemMemory);
+RB_METHOD(mkxpNativeBitmapTextTranslation);
 RB_METHOD(mkxpReloadPathCache);
 RB_METHOD(mkxpAddPath);
 RB_METHOD(mkxpRemovePath);
@@ -256,6 +257,7 @@ static void mriBindingInit() {
     _rb_define_module_function(mod, "power_state", mkxpPowerState);
     _rb_define_module_function(mod, "nproc", mkxpCpuCount);
     _rb_define_module_function(mod, "memory", mkxpSystemMemory);
+    _rb_define_module_function(mod, "native_bitmap_text_translation?", mkxpNativeBitmapTextTranslation);
     _rb_define_module_function(mod, "reload_cache", mkxpReloadPathCache);
     _rb_define_module_function(mod, "mount", mkxpAddPath);
     _rb_define_module_function(mod, "unmount", mkxpRemovePath);
@@ -556,6 +558,11 @@ RB_METHOD(mkxpSystemMemory) {
     RB_UNUSED_PARAM;
     
     return INT2NUM(SDL_GetSystemRAM());
+}
+
+RB_METHOD(mkxpNativeBitmapTextTranslation) {
+    RB_UNUSED_PARAM;
+    return Qtrue;
 }
 
 RB_METHOD_GUARD(mkxpReloadPathCache) {

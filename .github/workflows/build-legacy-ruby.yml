@@ -22,6 +22,7 @@ on:
       - src/meson.build
       - binding/meson.build
       - binding/binding-mri.cpp
+      - binding/bitmap-binding.cpp
       - binding/binding-util.h
       - binding/http-binding.cpp
       - src/main.cpp
